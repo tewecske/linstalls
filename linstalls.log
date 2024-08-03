@@ -1,6 +1,6 @@
 sudo add-apt-repository ppa:neovim-ppa/unstable
 sudo apt-get update
-sudo apt-get install neovim unzip
+sudo apt-get install neovim unzip make
 mkdir ~/.ssh/
 cp /mnt/c/Users/tewec/.ssh/id_rsa* ~/.ssh/
 chmod go-rx ~/.ssh/*
@@ -10,4 +10,12 @@ git clone git@github.com:tewecske/kickstart.nvim.git "${XDG_CONFIG_HOME:-$HOME/.
 sudo apt remove golang-go golang-src golang-1.18 golang-1.18-go golang-1.18-doc golang-1.18-src
 sudo apt install golang-1.22
 export PATH=$PATH:/usr/local/go/bin
+
+rm ~/.profile && ln -s ~/linstalls/bash/.profile ~/.profile
+rm ~/.bashrc && ln -s ~/linstalls/bash/.bashrc ~/.bashrc
+rm ~/.bash_aliases && ln -s ~/linstalls/bash/.bash_aliases ~/.bash_aliases
+ln -s ~/linstalls/scripts ~/bin/scripts
+ln -s ~/linstalls/tmux/.tmux.conf ~/.tmux.conf
+ln -s ~/go/bin/air ~/bin/air
+ln -s ~/go/bin/templ ~/bin/templ
 

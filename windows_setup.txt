@@ -1,0 +1,22 @@
+!!! WSL network mirror !!!
+
+nvim ($env:USERPROFILE+"\.wslconfig")
+
+[wsl2]
+networkingMode=mirrored
+
+From an elevated, admin PowerShell, test that the WSL2 firewall is available:
+
+Get-NetFirewallHyperVVMCreator
+
+New-NetFirewallHyperVRule `
+-DisplayName 'Allow All Inbound Traffic to WSL in Private Network' `
+-Name 'WSL Private Inbound Rule' `
+-Profiles Private `
+-Direction Inbound `
+-Action Allow `
+-VMCreatorId ((Get-NetFirewallHyperVVMCreator).VMCreatorId) `
+-Enabled True
+
+wsl --shutdown
+
