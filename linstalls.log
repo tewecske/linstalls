@@ -19,3 +19,5 @@ ln -s ~/linstalls/tmux/.tmux.conf ~/.tmux.conf
 ln -s ~/go/bin/air ~/bin/air
 ln -s ~/go/bin/templ ~/bin/templ
 
+go install github.com/a-h/templ/cmd/templ@latest
+
