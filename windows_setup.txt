@@ -1,3 +1,5 @@
+wsl.exe --set-version Ubuntu 2
+
 !!! WSL network mirror !!!
 
 nvim ($env:USERPROFILE+"\.wslconfig")
