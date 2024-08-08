@@ -16,8 +16,27 @@ rm ~/.bashrc && ln -s ~/linstalls/bash/.bashrc ~/.bashrc
 rm ~/.bash_aliases && ln -s ~/linstalls/bash/.bash_aliases ~/.bash_aliases
 ln -s ~/linstalls/scripts ~/bin/scripts
 ln -s ~/linstalls/tmux/.tmux.conf ~/.tmux.conf
+
+go install github.com/air-verse/air@latest
 ln -s ~/go/bin/air ~/bin/air
+go install github.com/a-h/templ/cmd/templ@latest
 ln -s ~/go/bin/templ ~/bin/templ
 
-go install github.com/a-h/templ/cmd/templ@latest
+# installs fnm (Fast Node Manager)
+curl -fsSL https://fnm.vercel.app/install | bash
+# activate fnm
+source ~/.bashrc
+# download and install Node.js
+fnm use --install-if-missing 20
+# verifies the right Node.js version is in the environment
+node -v # should print `v20.16.0`
+# verifies the right npm version is in the environment
+npm -v # should print `10.8.1`
+
+curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.8/tailwindcss-linux-x64
+chmod +x tailwindcss-linux-x64
+mv tailwindcss-linux-x64 tailwindcss
+mv tailwindcss ~/bin/
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
