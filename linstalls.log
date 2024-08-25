@@ -42,3 +42,16 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 sudo apt install sqlite3
 
+sudo apt install 7zip
+
+sudo apt-get install jq
+
+apt install fd-find
+
+sudo apt-get install ripgrep
+
+sudo apt install fzf
+
+# zoxide the better cd
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+
