@@ -35,3 +35,7 @@ if [ -d "/usr/local/go/bin" ] ; then
 fi
 
 . "$HOME/.cargo/env"
+
+# >>> coursier install directory >>>
+export PATH="$PATH:/home/tewe/.local/share/coursier/bin"
+# <<< coursier install directory <<<
