@@ -55,3 +55,6 @@ sudo apt install fzf
 # zoxide the better cd
 curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
 
+# pdftotext
+sudo apt-get install poppler-utils
+
