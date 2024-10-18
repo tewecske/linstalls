@@ -17,6 +17,11 @@ rm ~/.bash_aliases && ln -s ~/linstalls/bash/.bash_aliases ~/.bash_aliases
 ln -s ~/linstalls/scripts ~/bin/scripts
 ln -s ~/linstalls/tmux/.tmux.conf ~/.tmux.conf
 
+# install scala
+curl -fL "https://github.com/coursier/launchers/raw/master/cs-x86_64-pc-linux.gz" | gzip -d > cs
+./cs setup
+cs install mill
+
 go install github.com/air-verse/air@latest
 ln -s ~/go/bin/air ~/bin/air
 go install github.com/a-h/templ/cmd/templ@latest
@@ -57,4 +62,9 @@ curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh 
 
 # pdftotext
 sudo apt-get install poppler-utils
+
+sudo apt install golang-1.23
+go install golang.org/dl/go1.23.1@latest
+
+sudo apt install ffmpeg
 

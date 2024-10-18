@@ -1,0 +1,17 @@
+# This is Git's per-user configuration file.
+[user]
+	name = tewe
+	email = leventewe@gmail.com
+[core]
+	editor = nvim
+[alias]
+	lg = log --decorate --oneline --graph
+[rerere]
+	enabled = true
+[merge]
+	tool = nvimdiff
+[mergetool]
+	prompt = false
+	keepBackup = false
+[mergetool "nvimdiff"]
+	layout = "LOCAL,BASE,REMOTE / MERGED"
