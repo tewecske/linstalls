@@ -30,6 +30,7 @@ in
     gcc
     python3 # mason + treesitter build deps
     ffmpeg
+    nerd-fonts.meslo-lg
 
     # --- cli ------------------------------------------------------------------
     bat
