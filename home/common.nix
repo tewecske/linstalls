@@ -30,7 +30,6 @@ in
     gcc
     python3 # mason + treesitter build deps
     ffmpeg
-    docker
 
     # --- cli ------------------------------------------------------------------
     bat
