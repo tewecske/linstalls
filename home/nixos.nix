@@ -18,5 +18,8 @@
   # Alternative: drop mason from init.lua and take LSP servers from nixpkgs
   # (gopls, metals, nil, rust-analyzer are already in home/common.nix).
 
+  # Which homeConfiguration this machine is; read by the `hm` shell wrapper.
+  home.sessionVariables.HM_TARGET = "tewe@nixos";
+
   # Host-only packages / settings go here.
 }

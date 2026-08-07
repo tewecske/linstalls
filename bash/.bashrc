@@ -124,35 +124,42 @@ fi
 # rust, only when installed outside nix (rustup)
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
-# nix / home-manager
-# Exports PATH additions, MANPATH, XDG_DATA_DIRS for the home-manager profile.
-if [ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
-  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
-fi
-case ":$PATH:" in
-  *":$HOME/.nix-profile/bin:"*) ;;
-  *) export PATH="$HOME/.nix-profile/bin:$PATH" ;;
-esac
+# fnm - SUPERSEDED by nix (nodejs_22 in home/common.nix).
+# Uncommenting puts fnm's node/npm ahead of nix's on PATH.
+# FNM_PATH="$HOME/.local/share/fnm"
+# if [ -d "$FNM_PATH" ]; then
+#   export PATH="$FNM_PATH:$PATH"
+#   eval "$(fnm env)"
+# fi
 
-# fnm - superseded by nix (nodejs_22 in home/common.nix).
-# Left in place, guarded, for machines without home-manager.
-FNM_PATH="$HOME/.local/share/fnm"
-if [ -d "$FNM_PATH" ]; then
-  export PATH="$FNM_PATH:$PATH"
-  eval "$(fnm env)"
-fi
+# sdkman - SUPERSEDED by nix (jdk21 in home/common.nix).
+# Uncommenting puts sdkman's java ahead of nix's on PATH, and this block must
+# then move below the nix block at the end of this file.
+# export SDKMAN_DIR="$HOME/.sdkman"
+# [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
 
-# sdkman - superseded by nix (jdk21 in home/common.nix).
-# IF RE-ENABLED THIS MUST STAY AT THE END OF THE FILE.
-export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
-
-command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
-
-# pnpm (global install dir; the pnpm binary itself comes from nix)
+# pnpm global install dir (the pnpm binary itself comes from nix)
 export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 # pnpm end
+
+# nix / home-manager
+# Deliberately LAST: every block above prepends to PATH, so this has to run
+# after them to win. ~/.profile prepends a few more dirs *after* sourcing this
+# file - keep those nix-free or they will shadow the nix profile again.
+if [ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+fi
+for _d in "/nix/var/nix/profiles/default/bin" "$HOME/.nix-profile/bin"; do
+  case ":$PATH:" in
+    *":$_d:"*) ;;
+    *) [ -d "$_d" ] && PATH="$_d:$PATH" ;;
+  esac
+done
+unset _d
+export PATH
+
+command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"

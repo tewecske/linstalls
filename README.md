@@ -118,14 +118,43 @@ then `sudo nixos-rebuild switch`. Unnecessary on WSL/Ubuntu/Fedora.
 
 ## Daily use
 
+The config is a flake, so it is **not** at home-manager's default
+`~/.config/home-manager/home.nix`. Bare `home-manager news` therefore fails with
+"No configuration file found" — every subcommand needs `--flake`. The `hm`
+wrapper in `bash/.bash_aliases` supplies it, using `HM_TARGET` (set per machine
+in `home/<host>.nix`).
+
 | | |
 |---|---|
-| apply changes | `home-manager switch --flake ~/linstalls#tewe@wsl` |
-| add a package | edit `home/common.nix`, then switch |
-| update everything | `nix flake update` in `~/linstalls`, then switch |
-| roll back | `home-manager generations`, then run the listed generation's `activate` |
+| apply changes | `hm switch` |
+| what changed upstream | `hm news` |
+| build without activating | `hm build` |
+| add a package | edit `home/common.nix`, then `hm switch` |
+| update everything | `nix flake update` in `~/linstalls`, then `hm switch` |
+| roll back | `home-manager generations`, then run that generation's `activate` |
 | find a package name | `nix search nixpkgs ripgrep` |
 | format the nix files | `nix fmt` |
+
+### PATH ordering — read before editing bash/
+
+Login shell order is: `.profile` sources `.bashrc` **first**, then prepends its
+own dirs. So anything that prepends to `PATH` *after* the nix block shadows the
+nix profile.
+
+The nix block is therefore the **last** thing in `.bashrc`, and these are
+commented out because each one prepends a competing toolchain:
+
+| block | file | shadows |
+|---|---|---|
+| `/usr/local/go/bin` | `.profile` | `go` |
+| sdkman init | `.bashrc` | `java` |
+| fnm init | `.bashrc` | `node`, `npm` |
+
+Re-enable any of them and that tool stops coming from nix. Verify with:
+
+```sh
+env -i HOME="$HOME" TERM=xterm PATH=/usr/bin:/bin bash -lic 'command -v go java node'
+```
 
 `flake.lock` pins every input — commit it. Two machines on the same lock get
 byte-identical tooling.

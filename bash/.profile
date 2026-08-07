@@ -30,9 +30,11 @@ if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
 
-if [ -d "/usr/local/go/bin" ] ; then
-    PATH="/usr/local/go/bin:$PATH"
-fi
+# SUPERSEDED by nix (go in home/common.nix). This runs *after* .bashrc, so
+# uncommenting puts the apt/manual go ahead of nix's.
+# if [ -d "/usr/local/go/bin" ] ; then
+#     PATH="/usr/local/go/bin:$PATH"
+# fi
 
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
