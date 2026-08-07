@@ -34,10 +34,14 @@ if [ -d "/usr/local/go/bin" ] ; then
     PATH="/usr/local/go/bin:$PATH"
 fi
 
-. "$HOME/.cargo/env"
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # >>> coursier install directory >>>
-export PATH="$PATH:/home/tewe/.local/share/coursier/bin"
+# `cs setup` is no longer used; kept so anything installed via `cs install`
+# (e.g. metals fetched by nvim-metals) stays on PATH.
+if [ -d "$HOME/.local/share/coursier/bin" ] ; then
+    PATH="$PATH:$HOME/.local/share/coursier/bin"
+fi
 # <<< coursier install directory <<<
 
 

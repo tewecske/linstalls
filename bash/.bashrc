@@ -120,23 +120,37 @@ if ! shopt -oq posix; then
 fi
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
-. "$HOME/.cargo/env"
 
-# fnm
-FNM_PATH="/home/tewe/.local/share/fnm"
+# rust, only when installed outside nix (rustup)
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+
+# nix / home-manager
+# Exports PATH additions, MANPATH, XDG_DATA_DIRS for the home-manager profile.
+if [ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+fi
+case ":$PATH:" in
+  *":$HOME/.nix-profile/bin:"*) ;;
+  *) export PATH="$HOME/.nix-profile/bin:$PATH" ;;
+esac
+
+# fnm - superseded by nix (nodejs_22 in home/common.nix).
+# Left in place, guarded, for machines without home-manager.
+FNM_PATH="$HOME/.local/share/fnm"
 if [ -d "$FNM_PATH" ]; then
   export PATH="$FNM_PATH:$PATH"
-  eval "`fnm env`"
+  eval "$(fnm env)"
 fi
 
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+# sdkman - superseded by nix (jdk21 in home/common.nix).
+# IF RE-ENABLED THIS MUST STAY AT THE END OF THE FILE.
 export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
 
-eval "$(starship init bash)"
+command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
 
-# pnpm
-export PNPM_HOME="/home/tewe/.local/share/pnpm"
+# pnpm (global install dir; the pnpm binary itself comes from nix)
+export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;

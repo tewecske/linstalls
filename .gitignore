@@ -1,0 +1,10 @@
+# nix build output
+result
+result-*
+
+# devenv (if used in this repo)
+.devenv/
+.direnv/
+
+# home-manager first-run backups
+*.backup

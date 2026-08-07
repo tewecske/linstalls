@@ -5,5 +5,5 @@ bind '"\e[B":history-search-forward'
 alias vim='nvim'
 alias vimdiff='nvim -d'
 alias nvimdiff='nvim -d'
-alias ws='cd /home/tewe/projects/'
+alias ws='cd "$HOME/projects/"'
 
