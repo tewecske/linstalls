@@ -28,7 +28,7 @@ in
     zip
     gnumake
     gcc
-    python3 # mason + treesitter build deps
+    python3 # treesitter parser build dep
     ffmpeg
     nerd-fonts.meslo-lg
 
@@ -54,6 +54,7 @@ in
     gopls
     air
     templ
+    delve # go debugger, driven by nvim-dap-go
 
     # --- node  (replaces fnm) -------------------------------------------------
     nodejs_22
@@ -67,6 +68,18 @@ in
     # --- nix itself -----------------------------------------------------------
     nil # nix LSP
     nixfmt-rfc-style
+
+    # --- editor tooling (replaces mason.nvim) ---------------------------------
+    # Language servers for languages that have no toolchain section above, plus
+    # the formatters nvim shells out to. gopls / metals / rust-analyzer / nil
+    # live with their toolchains.
+    lua-language-server
+    vscode-langservers-extracted # html, css, json, eslint servers
+    tailwindcss-language-server
+    emmet-language-server
+    htmx-lsp
+    stylua # lua formatter; lua_ls does not format
+    tree-sitter # nvim-treesitter's `main` branch shells out to it to build parsers
 
     # --- opt-in: uncomment if you actually need these -------------------------
     # sqlite         # you said probably not needed
@@ -91,8 +104,11 @@ in
   };
 
   # NOTE: ~/.config/nvim is deliberately NOT managed here. It is its own git
-  # repo (tewecske/kickstart.nvim) and lazy.nvim writes lazy-lock.json into it.
-  # See README.md for the clone step.
+  # repo, and nvim's built-in plugin manager (`:h vim.pack`) writes
+  # nvim-pack-lock.json into it. See README.md for the clone step.
+  #
+  # Language servers are NOT installed by nvim — Mason was removed. Every server
+  # nvim enables must be on PATH from the list above.
 
   #############################################################################
   # Session
