@@ -166,6 +166,45 @@ byte-identical tooling.
 nix store. Edit them and the change is live — **no switch needed**. Only adding
 or removing a *file* needs a switch.
 
+### Monitor hotplug — Fedora/i3 only
+
+X does not disable an output when you pull the cable: the CRTC stays mapped, so
+i3 keeps a workspace on a screen that no longer exists and its windows become
+unreachable. `scripts/display-hotplug` fixes that, and the reverse case.
+
+`home/fedora.nix` runs it as a **systemd user unit** (`display-hotplug`) that
+watches `udevadm monitor --udev --subsystem-match=drm`. Nothing needs root:
+udev's userspace events are readable unprivileged, and lightdm already exports
+`DISPLAY`/`XAUTHORITY` into the `systemctl --user` environment.
+
+On each event it:
+
+- lays the internal panel out at `0x0` as primary, every external `--right-of`
+  the previous one;
+- `--off`s any output that is enabled with nothing plugged into it, which is
+  what makes i3 pull the stranded workspaces back;
+- switches the audio card profile between `output:hdmi-stereo+input:analog-stereo`
+  and `output:analog-stereo+input:analog-stereo`, sets the default sink and
+  moves playing streams over — i.e. the pavucontrol step, automated.
+
+This laptop's monitor reports no ELD, so pipewire marks the HDMI profiles
+`available: no` even while sound works. The script therefore sets the profile
+and checks whether it stuck, rather than trusting availability.
+
+Workspace 2 is pinned to the external screen by one line in
+`~/.config/i3/config` (not managed by this repo):
+
+```
+workspace $ws2 output HDMI-1 DP-1 DP-2 primary
+```
+
+| | |
+|---|---|
+| repair the layout by hand | `display-hotplug` (it is on `PATH` via `~/bin/scripts`) |
+| watch what it does | `journalctl --user -u display-hotplug -f` |
+| after editing the script | `systemctl --user restart display-hotplug` |
+| different workspace on the external | `EXTERNAL_WS=3 display-hotplug`, and edit the i3 line |
+
 ---
 
 ## What replaced what

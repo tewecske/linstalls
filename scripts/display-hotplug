@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+#
+# display-hotplug — react to a monitor being plugged in / unplugged, under i3 + X11.
+#
+#   display-hotplug            apply the layout that matches what is plugged in right now
+#   display-hotplug --watch    stay running, apply on every drm hotplug event (systemd user unit)
+#
+# Why this is needed: X does not disable an output when the cable is pulled. The
+# CRTC stays mapped, so i3 keeps a workspace on a screen you cannot see, and the
+# windows on it are effectively lost. Running `xrandr --output <ext> --off` makes
+# i3 move those workspaces back to the laptop panel on its own.
+#
+# What it does:
+#   - external connected -> internal primary at 0x0, external --auto to its right,
+#                           audio switched to HDMI
+#   - external gone      -> that output --off (i3 pulls the workspaces back),
+#                           audio switched back to the analog output
+#
+# Every disconnected-but-still-enabled output is turned off, so a stale layout
+# left over from a manual xrandr run gets repaired too.
+
+set -uo pipefail
+
+# systemd user units get a minimal PATH and no X env if the session did not
+# export one; both are cheap to make safe here so the script also works from cron,
+# a keybinding, or a plain shell.
+export DISPLAY="${DISPLAY:-:0}"
+if [[ -z ${XAUTHORITY:-} && -r "/run/lightdm/$USER/xauthority" ]]; then
+    export XAUTHORITY="/run/lightdm/$USER/xauthority"
+fi
+
+# Workspace to hand to the external screen when it appears. i3 also does this on
+# its own via the `workspace 2 output HDMI-1 ...` line in ~/.config/i3/config;
+# this is the belt-and-braces path for when that workspace already exists.
+EXTERNAL_WS="${EXTERNAL_WS:-2}"
+
+log() { printf '%s display-hotplug: %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
+
+# Outputs xrandr knows about, split by state.
+# `xrandr --query` lines look like: "HDMI-1 connected 1920x1080+1920+0 (normal ..."
+outputs_by_state() { # $1 = connected | disconnected
+    xrandr --query | awk -v want="$1" '$2 == want { print $1 }'
+}
+
+# Outputs that currently have a CRTC, i.e. are part of the X screen.
+active_outputs() {
+    xrandr --listmonitors | awk 'NR > 1 { print $NF }'
+}
+
+# What is plugged in and where it sits. Used by --watch to tell a real hotplug
+# apart from the drm uevent that our own `xrandr` call generates — without this
+# the watcher answers its own events in a loop.
+state_signature() {
+    xrandr --query | awk '$2 == "connected" || $2 == "disconnected" { print $1, $2 }'
+    xrandr --listmonitors | awk 'NR > 1 { print $NF, $3 }'
+}
+
+#############################################################################
+# Video
+#############################################################################
+apply_layout() {
+    local internal="" ext externals=() args=() prev out
+
+    mapfile -t connected < <(outputs_by_state connected)
+    mapfile -t disconnected < <(outputs_by_state disconnected)
+
+    # The laptop panel: eDP / LVDS. Everything else connected is an external.
+    for out in "${connected[@]}"; do
+        case "$out" in
+            eDP* | LVDS*) [[ -z $internal ]] && internal="$out" ;;
+            *) externals+=("$out") ;;
+        esac
+    done
+
+    if [[ -z $internal ]]; then
+        # Docked with the lid shut, or a desktop. Treat the first connected
+        # output as the primary one and drop it from the external list.
+        internal="${connected[0]:-}"
+        externals=("${connected[@]:1}")
+    fi
+    if [[ -z $internal ]]; then
+        log "no connected outputs, nothing to do"
+        return 1
+    fi
+
+    args=(--output "$internal" --auto --primary --pos 0x0 --rotate normal)
+    prev="$internal"
+    for ext in "${externals[@]}"; do
+        args+=(--output "$ext" --auto --rotate normal --right-of "$prev")
+        prev="$ext"
+    done
+
+    # Kill anything still enabled with no cable in it. This is the line that
+    # rescues windows stranded on the invisible screen.
+    for out in "${disconnected[@]}"; do
+        if active_outputs | grep -qx "$out"; then
+            log "turning off stale output $out"
+            args+=(--output "$out" --off)
+        fi
+    done
+
+    log "xrandr ${args[*]}"
+    xrandr "${args[@]}" || { log "xrandr failed"; return 1; }
+
+    printf '%s\n' "${externals[@]}"
+    return 0
+}
+
+#############################################################################
+# Audio — pavucontrol changes the *card profile*, so that is what we set back.
+#############################################################################
+pick_card() {
+    # The card that has HDMI profiles at all; on this box that is the one
+    # Intel HDA card, but do not hardcode the PCI address.
+    local card
+    while read -r _ card _; do
+        if card_profiles "$card" | grep -q '^output:hdmi'; then
+            printf '%s\n' "$card"
+            return 0
+        fi
+    done < <(pactl list short cards)
+    return 1
+}
+
+# Every profile name the card offers, one per line.
+#
+# Deliberately NOT filtered on "available: yes": this laptop's monitor does not
+# report ELD, so the HDMI profiles stay "available: no" even with the cable in
+# and sound working. That is exactly why the switch had to be done by hand in
+# pavucontrol. So: offer it, then check whether it stuck.
+card_profiles() {
+    pactl list cards | awk -v card="$1" '
+        $0 ~ "Name: " card "$" { incard = 1; next }
+        /^Card #/                { incard = 0 }
+        incard && /^[ \t]+Profiles:/          { inprof = 1; next }
+        incard && inprof && /^[ \t]+[A-Za-z]+:[ \t]*$/ { inprof = 0 }
+        incard && inprof {
+            line = $0
+            sub(/^[ \t]+/, "", line)
+            sub(/: .*$/,   "", line)
+            print line
+        }'
+}
+
+active_profile() {
+    pactl list cards |
+        sed -n "/Name: $1\$/,/^Card #/p" |
+        awk '/Active Profile:/ { print $3; exit }'
+}
+
+set_audio() { # $1 = hdmi | analog
+    local card want candidates chosen="" tries sink
+    card=$(pick_card) || { log "no audio card with HDMI profiles"; return 0; }
+
+    if [[ $1 == hdmi ]]; then
+        candidates=(output:hdmi-stereo+input:analog-stereo output:hdmi-stereo)
+    else
+        candidates=(output:analog-stereo+input:analog-stereo output:analog-stereo)
+    fi
+
+    # A freshly plugged card can refuse the profile for a moment.
+    for tries in 1 2 3 4 5; do
+        for want in "${candidates[@]}"; do
+            card_profiles "$card" | grep -qx "$want" || continue
+            if [[ $(active_profile "$card") == "$want" ]]; then
+                chosen="$want"
+                break 2
+            fi
+            pactl set-card-profile "$card" "$want" 2>/dev/null
+            if [[ $(active_profile "$card") == "$want" ]]; then
+                chosen="$want"
+                break 2
+            fi
+        done
+        sleep 0.5
+    done
+
+    if [[ -z $chosen ]]; then
+        log "could not switch $card to a $1 profile, leaving audio alone"
+        return 0
+    fi
+    log "audio profile -> $chosen"
+
+    # Make the sink that profile created the default, and drag anything already
+    # playing over to it.
+    sink=$(pactl list short sinks | awk -v pfx="alsa_output.${card#alsa_card.}" \
+        '$2 ~ "^" pfx { print $2; exit }')
+    [[ -n $sink ]] || sink=$(pactl list short sinks | awk 'NR == 1 { print $2 }')
+    [[ -n $sink ]] || return 0
+    pactl set-default-sink "$sink"
+    while read -r id _; do
+        [[ -n $id ]] && pactl move-sink-input "$id" "$sink" 2>/dev/null
+    done < <(pactl list short sink-inputs)
+}
+
+#############################################################################
+# i3 — hand the external screen its workspace
+#############################################################################
+place_workspace() { # $1 = external output name
+    local ext="$1" focused on_ext
+
+    command -v i3-msg >/dev/null || return 0
+    i3-msg -t get_version >/dev/null 2>&1 || return 0
+
+    # Already there? Then i3's own `workspace N output ...` assignment did it.
+    on_ext=$(i3-msg -t get_workspaces |
+        jq -r --arg ws "$EXTERNAL_WS" --arg out "$ext" \
+            '[.[] | select(.name == $ws and .output == $out)] | length')
+    [[ $on_ext == 0 ]] || return 0
+
+    focused=$(i3-msg -t get_workspaces | jq -r '.[] | select(.focused).name')
+    log "moving workspace $EXTERNAL_WS to $ext"
+    i3-msg -q "workspace --no-auto-back-and-forth $EXTERNAL_WS; move workspace to output $ext"
+    [[ -n $focused ]] && i3-msg -q "workspace --no-auto-back-and-forth $focused"
+}
+
+#############################################################################
+
+apply_all() {
+    local externals
+
+    if ! externals=$(apply_layout); then
+        return 1
+    fi
+
+    if [[ -n $externals ]]; then
+        set_audio hdmi
+        place_workspace "$(head -1 <<<"$externals")"
+    else
+        set_audio analog
+    fi
+}
+
+watch() {
+    local last
+
+    log "watching drm hotplug events"
+    apply_all
+    last=$(state_signature)
+
+    # Any drm uevent is a reason to look. A plug generates several in a burst,
+    # so drain them and act once; the sleep also gives X time to notice the new
+    # EDID before xrandr is asked about it.
+    udevadm monitor --udev --subsystem-match=drm | while read -r line; do
+        [[ -n $line ]] || continue
+        while read -r -t 1 _; do :; done
+        sleep 1
+
+        if [[ $(state_signature) == "$last" ]]; then
+            continue # our own modeset, or an event that changed nothing
+        fi
+        apply_all
+        last=$(state_signature)
+    done
+}
+
+case "${1:---once}" in
+    --watch) watch ;;
+    --once) apply_all ;;
+    *)
+        printf 'usage: %s [--once|--watch]\n' "${0##*/}" >&2
+        exit 2
+        ;;
+esac
