@@ -8,31 +8,29 @@ let
   link = path: config.lib.file.mkOutOfStoreSymlink "${repo}/${path}";
 in
 {
+  imports = [
+    ./programs/home-manager.nix
+    ./programs/bash.nix
+    ./programs/git.nix
+    ./programs/tmux.nix
+    ./programs/fzf.nix
+    ./programs/starship.nix
+    ./programs/dircolors.nix
+    ./programs/zoxide.nix
+  ];
+
   home.username = "tewe";
   home.homeDirectory = lib.mkDefault "/home/tewe";
 
   # Do not bump casually: it pins state-migration behaviour, not package versions.
   home.stateVersion = "25.05";
 
-  programs.home-manager.enable = true;
-
-  programs.bash = {
-    enable = true;
-    initExtra = builtins.readFile ../bash/.bashrc;
-    profileExtra = builtins.readFile ../bash/.profile;
-  };
-
-  programs.zoxide = {
-    enable = true;
-    enableBashIntegration = true;
-  };
-
   #############################################################################
   # Packages
   #############################################################################
   home.packages = with pkgs; [
     # --- basic dev ------------------------------------------------------------
-    git
+    # git and tmux come from programs.git / programs.tmux (home/programs/)
     curl
     wget
     unzip
@@ -47,9 +45,6 @@ in
     bat
     ripgrep
     jq
-    fzf
-    starship
-    tmux
     neovim
 
     # --- jvm / scala  (replaces sdkman + `cs setup`) ---------------------------
@@ -103,12 +98,12 @@ in
   #############################################################################
   home.file = {
     ".bash_aliases".source = link "bash/.bash_aliases";
-    ".gitconfig".source = link "git/.gitconfig";
     "bin/scripts".source = link "scripts";
   };
 
   xdg.configFile = {
-    "tmux/tmux.conf".source = link "tmux/tmux.conf";
+    # tmux/tmux.conf is forced back to this same symlink from
+    # home/programs/tmux.nix, which programs.tmux would otherwise overwrite.
     "tmux/tmux.reset.conf".source = link "tmux/tmux.reset.conf";
   };
 
