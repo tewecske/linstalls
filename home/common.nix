@@ -104,12 +104,6 @@ in
     "bin/scripts".source = link "scripts";
   };
 
-  xdg.configFile = {
-    # tmux/tmux.conf is forced back to this same symlink from
-    # home/programs/tmux.nix, which programs.tmux would otherwise overwrite.
-    "tmux/tmux.reset.conf".source = link "tmux/tmux.reset.conf";
-  };
-
   # NOTE: ~/.config/nvim is deliberately NOT managed here. It is its own git
   # repo, and nvim's built-in plugin manager (`:h vim.pack`) writes
   # nvim-pack-lock.json into it. See README.md for the clone step.
@@ -125,20 +119,4 @@ in
     VISUAL = "nvim";
     TERMINAL = "ghostty";
   };
-
-  #############################################################################
-  # tpm — tmux.conf `run`s it, and nix does not clone it.
-  #
-  # tpm derives TMUX_PLUGIN_MANAGER_PATH from the location of tmux.conf, so with
-  # the config at ~/.config/tmux/tmux.conf everything lands in
-  # ~/.config/tmux/plugins/. tmux.conf loads tpm from that same directory, so
-  # this bootstrap clone is the only one. Remaining plugins: prefix + I in tmux.
-  #############################################################################
-  home.activation.installTpm = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if [ ! -d "${config.xdg.configHome}/tmux/plugins/tpm" ]; then
-      run ${pkgs.git}/bin/git clone --depth 1 \
-        https://github.com/tmux-plugins/tpm \
-        "${config.xdg.configHome}/tmux/plugins/tpm"
-    fi
-  '';
 }
