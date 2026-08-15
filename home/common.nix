@@ -16,6 +16,17 @@ in
 
   programs.home-manager.enable = true;
 
+  programs.bash = {
+    enable = true;
+    initExtra = builtins.readFile ../bash/.bashrc;
+    profileExtra = builtins.readFile ../bash/.profile;
+  };
+
+  programs.zoxide = {
+    enable = true;
+    enableBashIntegration = true;
+  };
+
   #############################################################################
   # Packages
   #############################################################################
@@ -91,8 +102,6 @@ in
   # Dotfiles -> out-of-store symlinks into ~/linstalls
   #############################################################################
   home.file = {
-    ".bashrc".source = link "bash/.bashrc";
-    ".profile".source = link "bash/.profile";
     ".bash_aliases".source = link "bash/.bash_aliases";
     ".gitconfig".source = link "git/.gitconfig";
     "bin/scripts".source = link "scripts";
