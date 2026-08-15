@@ -1,4 +1,4 @@
-{ pkgs, lib, config, ... }:
+{ pkgs, lib, config, system, opencode, ... }:
 
 let
   # Absolute path to this repo as checked out on the machine.
@@ -86,6 +86,9 @@ in
     htmx-lsp
     stylua # lua formatter; lua_ls does not format
     tree-sitter # nvim-treesitter's `main` branch shells out to it to build parsers
+
+    # --- ai --------------------------------------------------------------------
+    opencode.packages.${system}.opencode
 
     # --- opt-in: uncomment if you actually need these -------------------------
     # sqlite         # you said probably not needed
