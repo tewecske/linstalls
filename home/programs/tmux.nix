@@ -37,9 +37,7 @@
           set -g @catppuccin_window_status_style "rounded"
           set -g @catppuccin_window_number_position "right"
           set -g @catppuccin_window_number_color "#{@thm_green}"
-          set -g @catppuccin_window_default_fill "number"
-          set -g @catppuccin_window_default_text "#W"
-          set -g @catppuccin_window_current_fill "number"
+          set -g @catppuccin_window_text "#W"
           set -g @catppuccin_window_current_text "#W#{?window_zoomed_flag,(),}"
           set -g @catppuccin_status_modules_right "directory date_time"
           set -g @catppuccin_status_modules_left "session"
@@ -60,6 +58,8 @@
       set -g renumber-windows on
       set -g set-clipboard on
       set -g status-position top
+      set -gF message-style "fg=#{@thm_teal},bg=#{@thm_overlay_0},fill=#{@thm_overlay_0}"
+      set -gF message-command-style "fg=#{@thm_teal},bg=#{@thm_overlay_0},fill=#{@thm_overlay_0}"
       set -g pane-active-border-style 'fg=magenta,bg=default'
       set -g pane-border-style 'fg=brightblack,bg=default'
 
