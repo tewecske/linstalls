@@ -11,10 +11,17 @@
       url = "github:anomalyco/opencode/v1.18.18";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Wraps nix-built programs so they can find OpenGL. On a foreign distro
+    # (Ubuntu/WSL) nix's loader never searches /usr/lib/x86_64-linux-gnu, so
+    # LWJGL/libGDX apps fail with "GLX: Failed to load GLX" without this.
+    nixGL = {
+      url = "github:nix-community/nixGL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    { nixpkgs, home-manager, opencode, ... }:
+    { nixpkgs, home-manager, opencode, nixGL, ... }:
     let
       system = "x86_64-linux";
 
@@ -29,7 +36,7 @@
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           extraSpecialArgs = {
-            inherit system opencode;
+            inherit system opencode nixGL;
           };
           modules = [
             ./home/common.nix

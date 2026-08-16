@@ -1,4 +1,4 @@
-{ pkgs, lib, config, system, opencode, ... }:
+{ pkgs, lib, config, system, opencode, nixGL, ... }:
 
 let
   # Absolute path to this repo as checked out on the machine.
@@ -54,6 +54,13 @@ in
     mill
     metals
     coursier # kept: nvim-metals shells out to `cs` for :MetalsInstall
+    nixGL.packages.${system}.nixGLIntel
+
+    # --- opengl on foreign distros --------------------------------------------
+    # nix's loader doesn't search /usr/lib/x86_64-linux-gnu, so GL apps
+    # (libGDX/LWJGL) can't find libGL. nixGLIntel wraps any command with nix's
+    # own mesa (software GL): `nixGLIntel sbt run`. Aliased to `sbt` in
+    # bash/.bash_aliases.
 
     # --- go  (replaces `go install ...` + hand-rolled ~/bin symlinks) ----------
     go

@@ -59,6 +59,9 @@ at the default `~/.config/home-manager/home.nix`.
 - NixOS host needs `programs.nix-ld.enable = true` in `/etc/nixos/configuration.nix`.
 - Fedora host runs `scripts/display-hotplug` as a systemd user unit (`display-hotplug`);
   restart with `systemctl --user restart display-hotplug` after editing.
+- OpenGL on non-NixOS hosts (WSL/Ubuntu): nix's loader can't see the host's
+  `/usr/lib/x86_64-linux-gnu`, so GL apps fail with `GLX: Failed to load GLX`.
+  Run them through `nixGLIntel <cmd>` (aliased to `sbt` in `bash/.bash_aliases`).
 
 ## Author
 
