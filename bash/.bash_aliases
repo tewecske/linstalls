@@ -6,6 +6,7 @@ alias vim='nvim'
 alias vimdiff='nvim -d'
 alias nvimdiff='nvim -d'
 alias ws='cd "$HOME/projects/"'
+alias cd='z'
 
 # GL apps (libGDX/LWJGL, e.g. boxdefense) can't find the host's OpenGL libs:
 # nix's loader never searches /usr/lib/x86_64-linux-gnu, so plain `sbt run`
